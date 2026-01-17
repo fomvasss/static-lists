@@ -8,7 +8,7 @@ use Fomvasss\StaticLists\Support\Arr;
  * Побудова масивів-списків з фільтрами/сортуванням.
  *
  * @param iterable<array> $records
- * @param ?string $columnKey  Поле значення або '*' для цілого запису
+ * @param string|array|null $columnKey  Поле значення, масив полів або '*' для цілого запису
  * @param ?string $indexKey   Поле-ключ результату
  * @param array{
  *   only?: array|string,
@@ -24,7 +24,7 @@ final class StaticListBuilder
 {
     public static function build(
         iterable $records = [],
-        ?string $columnKey = null,
+        string|array|null $columnKey = null,
         ?string $indexKey = null,
         array $options = [],
     ): array {
@@ -145,6 +145,24 @@ final class StaticListBuilder
                 }
                 return $out;
             }
+            
+            // Обробка масиву ключів
+            if (is_array($columnKey)) {
+                $out = [];
+                foreach ($col as $r) {
+                    $k = $r[$indexKey] ?? null;
+                    if ($k !== null) {
+                        $item = [];
+                        foreach ($columnKey as $field) {
+                            $item[$field] = $r[$field] ?? null;
+                        }
+                        $out[$k] = $item;
+                    }
+                }
+                return $out;
+            }
+            
+            // Обробка одного ключа (рядок)
             $out = [];
             foreach ($col as $r) {
                 $k = $r[$indexKey] ?? null;
@@ -165,6 +183,18 @@ final class StaticListBuilder
         }
 
         if ($columnKey && !$indexKey) {
+            // Обробка масиву ключів
+            if (is_array($columnKey)) {
+                return array_values(array_map(function($r) use ($columnKey) {
+                    $item = [];
+                    foreach ($columnKey as $field) {
+                        $item[$field] = $r[$field] ?? null;
+                    }
+                    return $item;
+                }, $col));
+            }
+            
+            // Обробка одного ключа (рядок)
             return array_values(array_map(fn($r) => $r[$columnKey] ?? null, $col));
         }
 
